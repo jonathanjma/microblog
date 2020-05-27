@@ -1,0 +1,11 @@
+.idea
+__pycache__
+elasticsearch-7.7.0
+venv
+microblog.log*
+act.cmd
+search.cmd
+SQLiteDatabaseBrowser.lnk
+*.iml
+app.db
+.env
