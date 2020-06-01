@@ -125,15 +125,25 @@ def unfollow(username):
 def search():
     if not g.search_form.validate():
         return redirect(url_for('main.explore'))
-    page = request.args.get('page', 1, type=int)
-    posts, total = Post.search(g.search_form.q.data, page,
-                               current_app.config['POSTS_PER_PAGE'])
-    next_url = url_for('main.search', q=g.search_form.q.data, page=page + 1) \
-        if total > page * current_app.config['POSTS_PER_PAGE'] else None
-    prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
-        if page > 1 else None
-    return render_template('search.html', title='Search', posts=posts,
-                           next_url=next_url, prev_url=prev_url)
+    from sqlalchemy.exc import ArgumentError
+    posts = ""
+    try:
+        posts = Post.query.whoosh_search(g.search_form.q.data).all()
+    except ArgumentError:
+        pass
+    return render_template('search.html', title='Search', posts=posts)
+    # to reindex everything: wa.index_all(app)
+    # pagination check out https://pypi.org/project/paginate-whoosh/
+
+    # page = request.args.get('page', 1, type=int)
+    # posts, total = Post.search(g.search_form.q.data, page,
+    #                            current_app.config['POSTS_PER_PAGE'])
+    # next_url = url_for('main.search', q=g.search_form.q.data, page=page + 1) \
+    #     if total > page * current_app.config['POSTS_PER_PAGE'] else None
+    # prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
+    #     if page > 1 else None
+    # return render_template('search.html', title='Search', posts=posts,
+    #                        next_url=next_url, prev_url=prev_url)
 
 @bp.route("/translate", methods=['POST'])
 @login_required

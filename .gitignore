@@ -3,9 +3,8 @@ __pycache__
 elasticsearch-7.7.0
 venv
 microblog.log*
-act.cmd
-search.cmd
-SQLiteDatabaseBrowser.lnk
+other
+whoosh-index
 *.iml
 app.db
 .env

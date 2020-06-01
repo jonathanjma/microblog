@@ -8,9 +8,10 @@ class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY')
 
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'app.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
 
-    ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
+    # ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
+    WHOOSH_BASE = os.path.join(basedir, 'whoosh-index')
     LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
 
     POSTS_PER_PAGE = 25
