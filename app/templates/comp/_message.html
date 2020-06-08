@@ -1,0 +1,28 @@
+<table class="table table-hover">
+    <tr>
+        <td width="70px">
+            <a href="{{ url_for('main.user', username=message.sender.username) }}">
+                <img src="{{ message.sender.avatar(70) }}" />
+            </a>
+        </td>
+        <td>
+            <span class="has_popup user_popup">
+                <a href="{{ url_for('main.user', username=message.sender.username) }}">
+                    {{ message.sender.username }}
+                </a>
+            </span>
+            sent {{ moment(message.timestamp).fromNow() }}:
+            <br>
+            <span id="post{{ message.id }}">{{ message.body }}</span>
+
+            {% if message.language and message.language != g.locale %}
+                <br><br>
+                <span id="translation{{ message.id }}">
+                    <a href="javascript:translate(
+                        '#post{{ message.id }}','#translation{{ message.id }}','{{ message.language }}','{{ g.locale }}');">
+                        Translate</a>
+                </span>
+            {% endif %}
+        </td>
+    </tr>
+</table>

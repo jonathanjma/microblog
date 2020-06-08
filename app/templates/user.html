@@ -5,55 +5,95 @@
     <tr>
         <td width="256px"><img src="{{ user.avatar(256) }}"></td>
         <td>
-            <h1>User: {{ user.username }}</h1>
+            <h1>{{ user.username }}</h1>
             {% if user.about_me %}
-                <p>{{ user.about_me }}</p>
+                <p style="font-size:20px">{{ user.about_me }}</p>
             {% endif %}
             {% if user.last_seen %}
                 <p>Last seen on: {{ moment(user.last_seen).format('LLL') }}</p>
             {% endif %}
 
             <p>{{ user.followers.count() }} followers, {{ user.followed.count() }} following.</p>
+            {% if current_user.is_following(user) %}
+                <p>Follows you</p>
+            {% endif %}
+
             {% if user == current_user %}
                 <p><a href="{{ url_for('main.edit_profile') }}">Edit your profile</a></p>
             {% elif not current_user.is_following(user) %}
-                <p><form action="{{ url_for('main.follow', username=user.username) }}" method="post">
+                <form action="{{ url_for('main.follow', username=user.username) }}" method="post">
                     {{ form.hidden_tag() }}
                     {{ form.submit(value='Follow', class_='btn btn-default') }}
-                </form></p>
+                </form><p></p>
             {% else %}
-                <p><form action="{{ url_for('main.unfollow', username=user.username) }}" method="post">
+                <form action="{{ url_for('main.unfollow', username=user.username) }}" method="post">
                     {{ form.hidden_tag() }}
                     {{ form.submit(value='Unfollow', class_='btn btn-default') }}
-                </form></p>
+                </form><p></p>
             {% endif %}
             {% if user != current_user %}
-                <p>
-                    <a href="{{ url_for('main.send_message', recipient=user.username) }}">
+                <p><a href="{{ url_for('main.send_message', recipient=user.username) }}">
                         Send private message
-                    </a>
-                </p>
+                </a></p>
             {% endif %}
         </td>
     </tr>
 </table>
 
-{% for post in posts %}
-    {% include '_post.html' %}
-{% endfor %}
+{% if user == current_user %}
+<ul class="nav nav-pills">
+    <li class="nav-item {% if id == 1 %}active{% endif %}">
+        <a class="nav-link"
+           href="{{ url_for('main.user', username=user.username) }}">Your Posts</a>
+    </li>
+    <li class="nav-item {% if id == 2 %}active{% endif %}">
+        <a class="nav-link"
+           href="{{ url_for('main.user', username=user.username, show='following') }}">Who You Follow</a>
+    </li>
+    <li class="nav-item {% if id == 3 %}active{% endif %}">
+        <a class="nav-link"
+           href="{{ url_for('main.user', username=user.username, show='followers') }}">Who Follows You</a>
+    </li>
+    <li class="nav-item {% if id == 4 %}active{% endif %}">
+        <a class="nav-link"
+           href="{{ url_for('main.user', username=user.username, show='likes') }}">Posts You Like</a>
+    </li>
+    <li class="nav-item {% if id == 5 %}active{% endif %}">
+        <a class="nav-link"
+           href="{{ url_for('main.user', username=user.username, show='comments') }}">Your Comments</a>
+    </li>
+</ul>
+<p></p>
+{% endif %}
 
-<nav aria-label="...">
-    <ul class="pager">
-        <li class="previous{% if not prev_url %} disabled{% endif %}">
-            <a href="{{ prev_url or '#' }}">
-                <span aria-hidden="true">&larr;</span> Newer posts
-            </a>
-        </li>
-        <li class="next{% if not next_url %} disabled{% endif %}">
-            <a href="{{ next_url or '#' }}">
-                Older posts <span aria-hidden="true">&rarr;</span>
-            </a>
-        </li>
-    </ul>
-</nav>
+{% if items.__len__() > 0 %}
+    {% if item_type == 'post' %}
+        {% for post in items %}
+            {% include 'comp/_post.html' %}
+        {% endfor %}
+    {% elif item_type == 'user' %}
+        {% for user in items %}
+            {% include 'comp/_user.html' %}
+        {% endfor %}
+    {% endif %}
+
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> Newer posts
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    Older posts <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% else %}
+    <p style="font-size:15px">Nothing to see here.
+        Try posting something, following someone, liking a post, or posting a comment!</p>
+{% endif %}
+
 {% endblock %}

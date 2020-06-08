@@ -1,82 +1,83 @@
 {% extends 'bootstrap/base.html' %}
 
 {% block title %}
-{% if title %}
-    {{ title }} - Microblog
-{% else %}
-    Welcome to Microblog
-{% endif %}
+    {% if title %}
+        {{ title }} - Microblog
+    {% else %}
+        Welcome to Microblog
+    {% endif %}
 {% endblock %}
 
 {% block styles %}
-{{ super() }}
-<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {{ super() }}
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {% block app_styles %}
+    {% endblock %}
 {% endblock %}
 
 {% block navbar %}
-<nav class="navbar navbar-default">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">Microblog</a>
-        </div>
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav">
-                <li><a href="{{ url_for('main.index') }}">Home</a></li>
-                <li><a href="{{ url_for('main.explore') }}">Explore</a></li>
-            </ul>
-            {% if g.search_form %}
-                <form class="navbar-form navbar-left" method="get"
-                      action="{{ url_for('main.search') }}">
-                    <div class="form-group">
-                        {{ g.search_form.q(size=20, class='form-control',
-                        placeholder=g.search_form.q.label.text) }}
-                    </div>
-                </form>
-            {% endif %}
-            <ul class="nav navbar-nav navbar-right">
-                {% if current_user.is_anonymous %}
-                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
-                {% else %}
-                    <li>
-                        <a href="{{ url_for('main.messages') }}">
-                            Messages
-                            {% set new_messages = current_user.new_messages() %}
-                            <span id="message_count" class="badge"
-                                  style="display: {% if new_messages %} inline-block
-                                                  {% else %} none {% endif %};">
-                                    {{ new_messages }}
-                                </span>
-                        </a>
-                    </li>
-                    <li><a href="{{ url_for('main.user', username=current_user.username) }}">Profile</a></li>
-                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">Microblog</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                    <li><a href="{{ url_for('main.explore') }}">Explore</a></li>
+                </ul>
+                {% if g.search_form %}
+                    <form class="navbar-form navbar-left" method="get"
+                          action="{{ url_for('main.search') }}">
+                        <div class="form-group">
+                            {{ g.search_form.q(size=20, class='form-control',
+                            placeholder=g.search_form.q.label.text) }}
+                        </div>
+                    </form>
                 {% endif %}
-            </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_anonymous %}
+                        <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    {% else %}
+                        <li>
+                            <a href="{{ url_for('main.messages') }}">
+                                Messages
+                                {% set new_messages = current_user.new_messages() %}
+                                <span id="message_count" class="badge"
+                                      style="display: {% if new_messages %} inline-block
+                                                      {% else %} none {% endif %};">
+                                        {{ new_messages }}
+                                    </span>
+                            </a>
+                        </li>
+                        <li><a href="{{ url_for('main.user', username=current_user.username) }}">Profile</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-info" role="alert">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info" role="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-    {# app_content block for application/page content #}
-    {% block app_content %}
-    {% endblock %}
-</div>
+        {% block app_content %}
+        {% endblock %}
+    </div>
 {% endblock %}
 
 {% block scripts %}
@@ -102,25 +103,31 @@
         // popups
         $(function() {
             var timer = null;
-            $('.user_popup').hover(
+            $('.has_popup').hover(
                 function(event) {
                     // mouse in event handler
                     var elem = $(event.currentTarget);
                     timer = setTimeout(function() {
                         timer = null;
-                        xhr = $.ajax(
-                            '/user/' + elem.first().text().trim() + '/popup').done(
-                                function(data) {
-                                    xhr = null
-                                    elem.popover({
-                                        trigger: 'manual',
-                                        html: true,
-                                        animation: false,
-                                        container: elem,
-                                        content: data
-                                    }).popover('show');
-                                    flask_moment_render_all();
-                                }
+
+                        if (elem.hasClass('user_popup')) {
+                            var link = '/user/' + elem.first().text().trim() + '/popup';
+                        } else if (elem.hasClass('likes_popup')) {
+                            var link = '/post/' + elem.first().attr('id') + '/likes_popup';
+                        }
+
+                        xhr = $.ajax(link).done(
+                            function(data) {
+                                xhr = null
+                                elem.popover({
+                                    trigger: 'manual',
+                                    html: true,
+                                    animation: false,
+                                    container: elem,
+                                    content: data
+                                }).popover('show');
+                                flask_moment_render_all();
+                            }
                         );
                     }, 1000);
                 },
@@ -155,8 +162,11 @@
                     $.ajax('{{ url_for('main.notifications') }}?since=' + since).done(
                         function(notifications) {
                             for (var i = 0; i < notifications.length; i++) {
-                                if (notifications[i].name == 'unread_message_count')
-                                    set_message_count(notifications[i].data);
+                                switch (notifications[i].name) {
+                                    case 'unread_message_count':
+                                        set_message_count(notifications[i].data);
+                                        break;
+                                }
                                 since = notifications[i].timestamp;
                             }
                         }
@@ -164,5 +174,13 @@
                 }, 10000);
             });
         {% endif %}
+
+        // allow table rows with "data-href" to be clickable
+        $('tr[data-href]').on("click", function() {
+            document.location = $(this).data('href');
+        });
     </script>
+
+    {% block app_scripts %}
+    {% endblock %}
 {% endblock %}

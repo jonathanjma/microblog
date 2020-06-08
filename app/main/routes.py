@@ -3,8 +3,8 @@ from flask import render_template, flash, redirect, url_for, request, g, \
     jsonify, current_app
 from flask_login import current_user, login_required
 from flask_babel import get_locale
-from app import db
-from app.main.forms import EditProfileForm, PostForm, SearchForm, MessageForm, EmptyForm
+from app import db, wa
+from app.main.forms import EditProfileForm, PostForm, CommentForm, SearchForm, MessageForm, EmptyForm
 from app.models import User, Post, Message, Notification
 from googletrans import Translator
 from app.main import bp
@@ -57,15 +57,54 @@ def explore():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.user', username=user.username, page=posts.next_num) \
-        if posts.has_next else None
-    prev_url = url_for('main.user', username=user.username, page=posts.prev_num) \
-        if posts.has_prev else None
-    form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts.items,
-                           next_url=next_url, prev_url=prev_url, form=form)
+    show = request.args.get('show')
+
+    if show is not None and current_user.username != username:
+        return redirect(url_for('main.user', username=user.username))
+
+    if show in [None, 'following', 'followers', 'likes', 'comments']:
+        if show is None:
+            items = user.get_posts().order_by(Post.timestamp.desc()).paginate(
+                page, current_app.config['POSTS_PER_PAGE'], False)
+            list_type = 'post'
+            id = 1
+        elif show == 'following':
+            items = user.followed.order_by(User.username.asc()).paginate(
+                page, current_app.config['POSTS_PER_PAGE'], False)
+            list_type = 'user'
+            id = 2
+        elif show == 'followers':
+            items = user.followers.order_by(User.username.asc()).paginate(
+                page, current_app.config['POSTS_PER_PAGE'], False)
+            list_type = 'user'
+            id = 3
+        elif show == 'likes':
+            items = user.liked_posts.order_by(Post.timestamp.desc()).paginate(
+                page, current_app.config['POSTS_PER_PAGE'], False)
+            list_type = 'post'
+            id = 4
+        else:
+            items = user.get_comments().order_by(Post.timestamp.desc()).paginate(
+                page, current_app.config['POSTS_PER_PAGE'], False)
+            list_type = 'post'
+            id = 5
+
+        if show is None:
+            next_url = url_for('main.user', username=user.username, page=items.next_num) \
+                if items.has_next else None
+            prev_url = url_for('main.user', username=user.username, page=items.prev_num) \
+                if items.has_prev else None
+        else:
+            next_url = url_for('main.user', username=user.username, show=show, page=items.next_num) \
+                if items.has_next else None
+            prev_url = url_for('main.user', username=user.username, show=show, page=items.prev_num) \
+                if items.has_prev else None
+
+        form = EmptyForm()
+        return render_template('user.html', user=user, items=items.items, item_type=list_type, id=id,
+                               next_url=next_url, prev_url=prev_url, form=form)
+    else:
+        return redirect(url_for('main.user', username=user.username))
 
 @bp.route('/user/<username>/popup')
 @login_required
@@ -129,6 +168,64 @@ def unfollow(username):
     else:
         return redirect(url_for('main.index'))
 
+@bp.route('/post/<post_id>', methods=['GET', 'POST'])
+@login_required
+def post_info(post_id):
+    page = request.args.get('page', 1, type=int)
+    post = Post.query.filter_by(id=post_id).first_or_404()
+    emp_form = EmptyForm()
+    form = CommentForm()
+    if form.validate_on_submit():
+        language = Translator().detect(form.comment.data).lang
+        comment = Post(body=form.comment.data, author=current_user, language=language, parent_id=post_id)
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment is now live!')
+        return redirect(url_for('main.post_info', post_id=post_id))
+
+    comments = post.comments.order_by(Post.timestamp.desc()).paginate(
+        page, current_app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('main.post_info', post_id=post_id, page=comments.next_num) \
+        if comments.has_next else None
+    prev_url = url_for('main.post_info', post_id=post_id, page=comments.prev_num) \
+        if comments.has_prev else None
+    return render_template('post_info.html', post=post, form=form, emp_form=emp_form,
+                           comments=comments.items, next_url=next_url, prev_url=prev_url)
+
+@bp.route('/like_post/<post_id>', methods=['POST'])
+@login_required
+def like_post(post_id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = Post.query.filter_by(id=post_id).first()
+        if post is None:
+            flash('Post {} not found.'.format(post))
+            return redirect(url_for('main.index'))
+        current_user.like_post(post)
+        db.session.commit()
+        flash('Post added to liked posts')
+    return redirect(url_for('main.post_info', post_id=post_id))
+
+@bp.route('/unlike_post/<post_id>', methods=['POST'])
+@login_required
+def unlike_post(post_id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = Post.query.filter_by(id=post_id).first()
+        if post is None:
+            flash('Post {} not found.'.format(post))
+            return redirect(url_for('main.index'))
+        current_user.unlike_post(post)
+        db.session.commit()
+        flash('Post removed from liked posts')
+    return redirect(url_for('main.post_info', post_id=post_id))
+
+@bp.route('/post/<post_id>/likes_popup')
+@login_required
+def post_likes_popup(post_id):
+    post = Post.query.filter_by(id=post_id).first_or_404()
+    return render_template('post_likes_popup.html', users=post.likes_on_post)
+
 @bp.route('/send_message/<recipient>', methods=['GET', 'POST'])
 @login_required
 def send_message(recipient):
@@ -185,7 +282,6 @@ def search():
     except ArgumentError:
         pass
     return render_template('search.html', title='Search', posts=posts)
-    # to reindex everything: wa.index_all(app)
     # pagination check out https://pypi.org/project/paginate-whoosh/
 
     # page = request.args.get('page', 1, type=int)
@@ -197,6 +293,13 @@ def search():
     #     if page > 1 else None
     # return render_template('search.html', title='Search', posts=posts,
     #                        next_url=next_url, prev_url=prev_url)
+
+# @bp.route('/reindex')
+# @login_required
+# def reindex():
+#     wa.index_all(current_app)
+#     flash('App reindexed')
+#     return redirect(url_for('main.index'))
 
 @bp.route("/translate", methods=['POST'])
 @login_required

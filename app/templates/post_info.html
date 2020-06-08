@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_styles %}
+<style type="text/css">
+    .like {
+        font-size: 22px;
+    }
+    .like:hover {
+        color: #007fff;
+        transition: all .2s ease-in-out;
+        transform: scale(1.1);
+    }
+    .active {
+        color: #007fff;
+    }
+    table {
+        border-spacing: 0.5rem;
+    }
+    td {
+        padding: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block app_scripts %}
+<script>
+    $('.like').on('click', function() {
+        event.preventDefault();
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active');
+        } else {
+            $(this).addClass('active');
+        }
+    });
+</script>
+{% endblock %}
+
+{% block app_content %}
+<h1>Post Details</h1>
+
+{% if post.is_comment() %}
+    {% with %}
+        {% set post = post.get_comment_parent() %}
+        {% set no_margin = True %}
+        {% include 'comp/_post.html' %}
+    {% endwith %}
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <img src="{{ url_for('static', filename='vbar.png') }}"/></p>
+{% else %}
+    <hr>
+{% endif %}
+
+<div class="container">
+    <table>
+        <tr>
+            <td colspan="1" width="85px">
+                <a href="{{ url_for('main.user', username=post.author.username) }}">
+                    <img src="{{ post.author.avatar(70) }}"/>
+                </a>
+            </td>
+            <td colspan="2">
+                <span class="has_popup user_popup">
+                    <a href="{{ url_for('main.user', username=post.author.username) }}" style="font-size: 20px">
+                        {{ post.author.username }}
+                    </a>
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <p></p>
+                <span id="post{{ post.id }}" style="font-size: 20px">{{ post.body }}</span>
+
+                {% if post.language and post.language != g.locale %}
+                    <br><p></p>
+                    <span id="translation{{ post.id }}">
+                        <a href="javascript:translate(
+                            '#post{{ post.id }}','#translation{{ post.id }}','{{ post.language }}','{{ g.locale }}');">
+                            Translate</a>
+                    </span>
+                <br><p></p>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                {{ moment(post.timestamp).format('LLL') }}
+            </td>
+        </tr>
+    </table>
+</div>
+<hr>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-1">
+            {% if current_user.is_post_liked(post) %}
+                <form name="unlike" action="{{ url_for('main.unlike_post', post_id=post.id) }}" method="post">
+                    {{ emp_form.hidden_tag() }}
+                    <p style="font-size: 20px">Like
+                    <span class="glyphicon glyphicon-thumbs-up like active" onclick="unlike.submit()"></span>
+                    </p>
+                </form>
+            {% else %}
+                <form name="like" action="{{ url_for('main.like_post', post_id=post.id) }}" method="post">
+                    {{ emp_form.hidden_tag() }}
+                    <p style="font-size: 20px">Like
+                    <span class="glyphicon glyphicon-thumbs-up like" onclick="like.submit()"></span>
+                    </p>
+                </form>
+            {% endif %}
+        </div>
+        <div class="col-md-1">
+            <span class="has_popup likes_popup" id="{{ post.id }}" style="font-size: 20px">
+                {{ post.user_likes.count() }} Likes
+            </span>
+        </div>
+        <div class="col-md-2">
+            <p style="font-size: 20px">{{ post.comments.count() }} Comments</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            {{ wtf.quick_form(form) }}
+        </div>
+    </div>
+    <p></p>
+
+    {% for post in post.comments %}
+        {% include 'comp/_post.html' %}
+    {% endfor %}
+
+    {% if post.comments.count() > 0 %}
+        <nav aria-label="...">
+            <ul class="pager">
+                <li class="previous{% if not prev_url %} disabled{% endif %}">
+                    <a href="{{ prev_url or '#' }}">
+                        <span aria-hidden="true">&larr;</span> Newer comments
+                    </a>
+                </li>
+                <li class="next{% if not next_url %} disabled{% endif %}">
+                    <a href="{{ next_url or '#' }}">
+                        Older comments <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

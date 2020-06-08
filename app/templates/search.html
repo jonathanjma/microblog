@@ -3,8 +3,11 @@
 {% block app_content %}
 <h1>Search Results</h1>
 {% for post in posts %}
-    {% include '_post.html' %}
+    {% include 'comp/_post.html' %}
 {% endfor %}
+{% if posts.__len__() == 0 %}
+    <p style="font-size:15px">No results found.</p>
+{% endif %}
 <!--
 <nav aria-label="...">
     <ul class="pager">

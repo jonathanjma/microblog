@@ -29,7 +29,11 @@ class EditProfileForm(FlaskForm):
 
 class PostForm(FlaskForm):
     post = TextAreaField('Say something', validators=[DataRequired(), Length(min=0, max=140)])
-    submit = SubmitField('Submit')
+    submit = SubmitField('Post')
+
+class CommentForm(FlaskForm):
+    comment = TextAreaField('Leave a comment', validators=[DataRequired(), Length(min=0, max=140)])
+    submit = SubmitField('Post Comment')
 
 class SearchForm(FlaskForm):
     q = StringField('Search', validators=[DataRequired()])
@@ -43,7 +47,7 @@ class SearchForm(FlaskForm):
 
 class MessageForm(FlaskForm):
     message = TextAreaField('Message', validators=[DataRequired(), Length(min=0, max=140)])
-    submit = SubmitField('Submit')
+    submit = SubmitField('Send')
 
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')

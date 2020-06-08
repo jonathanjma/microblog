@@ -1,17 +1,25 @@
-<table class="table table-hover">
-    <tr>
+<table class="table table-hover" style="{% if no_margin %} margin-bottom: 2.5px; {% endif %}">
+    <tr data-href="{{ url_for('main.post_info', post_id=post.id) }}">
         <td width="70px">
             <a href="{{ url_for('main.user', username=post.author.username) }}">
-                <img src="{{ post.author.avatar(70) }}" />
+                <img src="{{ post.author.avatar(70) }}"/>
             </a>
         </td>
         <td>
-            <span class="user_popup">
+            <span class="has_popup user_popup">
                 <a href="{{ url_for('main.user', username=post.author.username) }}">
                     {{ post.author.username }}
                 </a>
             </span>
-            said {{ moment(post.timestamp).fromNow() }}:
+
+            {% if not post.is_comment() %}
+                said {{ moment(post.timestamp).fromNow() }}:
+            {% else %}
+                replied to
+                <a href="{{ url_for('main.post_info', post_id=post.get_comment_parent().id) }}">
+                    {{ post.get_comment_parent().author.username }}'s post</a>
+                {{ moment(post.timestamp).fromNow() }}:
+            {% endif %}
             <br>
             <span id="post{{ post.id }}">{{ post.body }}</span>
 
