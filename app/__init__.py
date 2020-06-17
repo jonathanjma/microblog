@@ -86,7 +86,7 @@ def create_app(config_class=Config):
 
 @babel.localeselector
 def get_locale():
-    locale = request.accept_languages[0][0]
+    locale = request.accept_languages.best # or [0][0]
     if "-" in locale:
         locale = locale[:2]
     return locale

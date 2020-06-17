@@ -66,27 +66,40 @@ def user(username):
         if show is None:
             items = user.get_posts().order_by(Post.timestamp.desc()).paginate(
                 page, current_app.config['POSTS_PER_PAGE'], False)
+            if current_user.username != username:
+                title = user.username + "'s Profile"
+            else :
+                title = 'Your Posts'
             list_type = 'post'
+            pag_text = ('Older posts', 'Newer posts')
             id = 1
         elif show == 'following':
             items = user.followed.order_by(User.username.asc()).paginate(
                 page, current_app.config['POSTS_PER_PAGE'], False)
+            title = 'Who You Follow'
             list_type = 'user'
+            pag_text = ('Previous Page', 'Next Page')
             id = 2
         elif show == 'followers':
             items = user.followers.order_by(User.username.asc()).paginate(
                 page, current_app.config['POSTS_PER_PAGE'], False)
+            title = 'Who Follows You'
             list_type = 'user'
+            pag_text = ('Previous Page', 'Next Page')
             id = 3
         elif show == 'likes':
             items = user.liked_posts.order_by(Post.timestamp.desc()).paginate(
                 page, current_app.config['POSTS_PER_PAGE'], False)
+            title = 'Posts You Like'
             list_type = 'post'
+            pag_text = ('Older posts', 'Newer posts')
             id = 4
         else:
             items = user.get_comments().order_by(Post.timestamp.desc()).paginate(
                 page, current_app.config['POSTS_PER_PAGE'], False)
+            title = 'Your Comments'
             list_type = 'post'
+            pag_text = ('Older comments', 'Newer comments')
             id = 5
 
         if show is None:
@@ -101,7 +114,8 @@ def user(username):
                 if items.has_prev else None
 
         form = EmptyForm()
-        return render_template('user.html', user=user, items=items.items, item_type=list_type, id=id,
+        return render_template('user.html', title=title, user=user,
+                               items=items.items, item_type=list_type, pag_text=pag_text, id=id,
                                next_url=next_url, prev_url=prev_url, form=form)
     else:
         return redirect(url_for('main.user', username=user.username))
@@ -127,7 +141,7 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
         form.email.data = current_user.email
-    return render_template('edit_profile.html', title='Edit Profile', form=form)
+    return render_template('edit_profile.html', title='Edit Your Profile', form=form)
 
 @bp.route('/follow/<username>', methods=['POST'])
 @login_required
@@ -188,8 +202,9 @@ def post_info(post_id):
         if comments.has_next else None
     prev_url = url_for('main.post_info', post_id=post_id, page=comments.prev_num) \
         if comments.has_prev else None
-    return render_template('post_info.html', post=post, form=form, emp_form=emp_form,
-                           comments=comments.items, next_url=next_url, prev_url=prev_url)
+    return render_template('post_info.html', title=post.author.username + "'s Post", post=post,
+                           form=form, emp_form=emp_form, comments=comments.items,
+                           next_url=next_url, prev_url=prev_url)
 
 @bp.route('/like_post/<post_id>', methods=['POST'])
 @login_required
@@ -254,7 +269,7 @@ def messages():
         if messages.has_next else None
     prev_url = url_for('main.messages', page=messages.prev_num) \
         if messages.has_prev else None
-    return render_template('messages.html', messages=messages.items,
+    return render_template('messages.html', title='Your Messages', messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/notifications')
@@ -280,7 +295,7 @@ def search():
         posts = Post.query.whoosh_search(g.search_form.q.data).all()
     except ArgumentError:
         pass
-    return render_template('search.html', title='Search', posts=posts)
+    return render_template('search.html', title='Search Results', posts=posts)
     # pagination check out https://pypi.org/project/paginate-whoosh/
 
     # page = request.args.get('page', 1, type=int)
@@ -290,7 +305,7 @@ def search():
     #     if total > page * current_app.config['POSTS_PER_PAGE'] else None
     # prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
     #     if page > 1 else None
-    # return render_template('search.html', title='Search', posts=posts,
+    # return render_template('search.html', title='Search Results', posts=posts,
     #                        next_url=next_url, prev_url=prev_url)
 
 # @bp.route('/reindex')
