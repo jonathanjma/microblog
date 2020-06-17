@@ -14,7 +14,7 @@
             {% endif %}
 
             <p>{{ user.followers.count() }} followers, {{ user.followed.count() }} following.</p>
-            {% if current_user.is_following(user) %}
+            {% if user.is_following(current_user) %}
                 <p>Follows you</p>
             {% endif %}
 

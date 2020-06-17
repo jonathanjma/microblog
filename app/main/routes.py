@@ -110,8 +110,7 @@ def user(username):
 @login_required
 def user_popup(username):
     user = User.query.filter_by(username=username).first_or_404()
-    form = EmptyForm()
-    return render_template('user_popup.html', user=user, form=form)
+    return render_template('user_popup.html', user=user)
 
 @bp.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
@@ -232,7 +231,7 @@ def send_message(recipient):
     user = User.query.filter_by(username=recipient).first_or_404()
     form = MessageForm()
     if form.validate_on_submit():
-        msg = Message(author=current_user, recipient=user, body=form.message.data)
+        msg = Message(sender=current_user, recipient=user, body=form.message.data)
         db.session.add(msg)
         user.add_notification('unread_message_count', user.new_messages())
         db.session.commit()
@@ -304,7 +303,6 @@ def search():
 @bp.route("/translate", methods=['POST'])
 @login_required
 def translate_text():
-    # emoji fix- edit gtoken.py line 164: change "len(text)" to "len(a)"
     dest = request.form['dest_language']
     if dest == "zh": dest = "zh-tw"
     #from googletrans import LANGUAGES as codes # all language codes
