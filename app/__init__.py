@@ -86,9 +86,11 @@ def create_app(config_class=Config):
 
 @babel.localeselector
 def get_locale():
-    locale = request.accept_languages.best # or [0][0]
-    if "-" in locale:
+    locale = request.accept_languages.best
+    if locale is not None and "-" in locale:
         locale = locale[:2]
+    elif locale is None:
+        locale = 'en'
     return locale
 
 from app import models
