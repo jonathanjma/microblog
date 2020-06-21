@@ -5,7 +5,7 @@ from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login
-import jwt, json
+import jwt, json, re
 from whoosh.analysis import FancyAnalyzer
 # from app.search import add_to_index, remove_from_index, query_index
 
@@ -46,6 +46,12 @@ class User(UserMixin, db.Model):
     last_message_read_time = db.Column(db.DateTime)
 
     notifications = db.relationship('Notification', backref='user', lazy='dynamic')
+
+    def get_mention_name(self):
+        if len(self.username.split()) > 1:
+            return self.username.replace(' ', '')
+        else:
+            return self.username
 
     def get_posts(self):
         return self.posts.filter_by(parent_id=None)
@@ -123,6 +129,11 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return '<User {}>'.format(self.username)
 
+def mention_user_filter(match):
+    for user in User.query.all():
+        if user.get_mention_name() == match:
+            return user
+
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
@@ -194,6 +205,76 @@ class Post(db.Model):
     def get_comment_parent(self):
         if self.is_comment():
             return Post.query.get(self.parent_id)
+
+    def display_body_data(self):
+        if self.body.count('@') >= 1:
+            post_data = self.parse_mentions()
+            parsed_post, users = post_data
+            post = ''
+            for segment in parsed_post:
+                post += segment
+            print(post)
+            if post != self.body:
+                raise RuntimeError('Mention parse error: post disagreement' \
+                                   '\nExpected: ' + self.body + '\nActual: ' + post)
+            print(users)
+        else:
+            post_data = self.body
+        print(post_data)
+        return post_data
+
+    def parse_mentions(self):
+        print()
+        regex_pattern = re.compile(r"\w+(?:'\w+)*|[^\w]")
+        matches = regex_pattern.findall(self.body)
+
+        processed = 0
+        post_segments = []
+        users_dict = {}
+        word_after = 0
+
+        print(matches)
+        print()
+
+        for i in range(1, len(matches)):
+
+            if matches[i-1] == '@':
+                user_query = mention_user_filter(matches[i])
+
+                if user_query is not None:
+                    print('user= ' + user_query.username)
+                    users_dict['@'+matches[i]] = user_query.username
+
+                    if processed == 0:
+                        split_indexes = [i-1,i+1]
+                        split_list = [matches[i : j]
+                                      for i, j in zip([0] + split_indexes, split_indexes + [None])]
+                        print(split_list)
+
+                        for segment in split_list:
+                            post_segments.append("".join(segment))
+                    else:
+                        split_indexes = [word_after,i-1,i+1]
+                        split_list = [matches[i : j]
+                                      for i, j in zip([0] + split_indexes, split_indexes + [None])]
+                        print(split_list)
+
+                        post_segments.pop()
+                        for j in range(1, len(split_list)):
+                            post_segments.append("".join(split_list[j]))
+
+                    processed += 1
+                    word_after = i + 1
+
+                    print(post_segments)
+                    print()
+
+                else:
+                    print('User does not exist')
+
+        if len(post_segments) == 0:
+            post_segments = self.body
+        return post_segments, users_dict
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)

@@ -21,10 +21,25 @@
                 {{ moment(post.timestamp).fromNow() }}:
             {% endif %}
             <br>
-            <span id="post{{ post.id }}">{{ post.body }}</span>
+            <span id="post{{ post.id }}">
+                {%- set post_data = post.display_body_data() -%}
+                {%- if post_data is string -%}
+                    <p>{{ post_data }}</p>
+                {%- else -%}
+                    <p>
+                    {%- for segment in post_data[0] -%}
+                        {%- if segment[0] == '@' and post_data[1].get(segment) != None -%}
+                            <a href="{{ url_for('main.user', username=post_data[1].get(segment)) }}">{{ segment }}</a>
+                        {%- else -%}
+                            {{ segment }}
+                        {%- endif -%}
+                    {%- endfor -%}
+                    </p>
+                {%- endif -%}
+            </span>
 
             {% if post.language and post.language != g.locale %}
-                <br><br>
+                <p></p>
                 <span id="translation{{ post.id }}">
                     <a href="javascript:translate(
                         '#post{{ post.id }}','#translation{{ post.id }}','{{ post.language }}','{{ g.locale }}');">

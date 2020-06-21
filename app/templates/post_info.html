@@ -70,16 +70,31 @@
         <tr>
             <td colspan="3">
                 <p></p>
-                <span id="post{{ post.id }}" style="font-size: 20px">{{ post.body }}</span>
+                <span id="post{{ post.id }}" style="font-size: 20px">
+                    {%- set post_data = post.display_body_data() -%}
+                    {%- if post_data is string -%}
+                        <p>{{ post_data }}</p>
+                    {%- else -%}
+                        <p>
+                        {%- for segment in post_data[0] -%}
+                            {%- if segment[0] == '@' and post_data[1].get(segment) != None -%}
+                            <a href="{{ url_for('main.user', username=post_data[1].get(segment)) }}">{{ segment }}</a>
+                            {%- else -%}
+                                {{ segment }}
+                            {%- endif -%}
+                        {%- endfor -%}
+                        </p>
+                    {%- endif -%}
+                </span>
 
                 {% if post.language and post.language != g.locale %}
-                    <br><p></p>
-                    <span id="translation{{ post.id }}">
+                    <p></p>
+                    <span id="translation{{ post.id }}" style="font-size: 16px">
                         <a href="javascript:translate(
                             '#post{{ post.id }}','#translation{{ post.id }}','{{ post.language }}','{{ g.locale }}');">
                             Translate</a>
                     </span>
-                <br><p></p>
+                    <p></p>
                 {% endif %}
             </td>
         </tr>

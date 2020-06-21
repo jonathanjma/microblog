@@ -320,6 +320,6 @@ def search():
 def translate_text():
     dest = request.form['dest_language']
     if dest == "zh": dest = "zh-tw"
-    #from googletrans import LANGUAGES as codes # all language codes
+    # from googletrans import LANGUAGES # all language codes
     return jsonify({'text': Translator().translate(
         text=request.form['text'],src=request.form['source_language'],dest=dest).text})
