@@ -5,10 +5,10 @@
 {% for post in posts %}
     {% include 'comp/_post.html' %}
 {% endfor %}
-{% if posts.__len__() == 0 %}
+{% if posts|length == 0 %}
     <p style="font-size:15px">No results found.</p>
 {% endif %}
-<!--
+
 <nav aria-label="...">
     <ul class="pager">
         <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -25,5 +25,5 @@
         </li>
     </ul>
 </nav>
--->
+
 {% endblock %}

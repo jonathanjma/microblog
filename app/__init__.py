@@ -9,8 +9,7 @@ from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel
-import flask_whooshalchemy as wa
-# from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch
 from config import Config
 
 db = SQLAlchemy()
@@ -34,11 +33,8 @@ def create_app(config_class=Config):
     moment.init_app(app)
     babel.init_app(app)
 
-    from app.models import Post
-    wa.whoosh_index(app, Post)
-
-    # app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
-    #     if app.config['ELASTICSEARCH_URL'] else None
+    app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
+        if app.config['ELASTICSEARCH_URL'] else None
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)

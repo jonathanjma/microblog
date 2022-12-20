@@ -1,9 +1,8 @@
 from datetime import datetime
-from flask import render_template, flash, redirect, url_for, request, g, \
-    jsonify, current_app
+from flask import render_template, flash, redirect, url_for, request, g, jsonify, current_app
 from flask_login import current_user, login_required
 from flask_babel import get_locale
-from app import db, wa
+from app import db
 from app.main.forms import EditProfileForm, PostForm, CommentForm, SearchForm, MessageForm, EmptyForm
 from app.models import User, Post, Message, Notification
 from googletrans import Translator
@@ -49,7 +48,7 @@ def explore():
         if posts.has_next else None
     prev_url = url_for('main.explore', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template("index.html", title='Explore', posts=posts.items,
+    return render_template('index.html', title='Explore', posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/user/<username>')
@@ -289,37 +288,21 @@ def notifications():
 def search():
     if not g.search_form.validate():
         return redirect(url_for('main.explore'))
-    from sqlalchemy.exc import ArgumentError
-    posts = ""
-    try:
-        posts = Post.query.whoosh_search(g.search_form.q.data).all()
-    except ArgumentError:
-        pass
-    return render_template('search.html', title='Search Results', posts=posts)
-    # pagination check out https://pypi.org/project/paginate-whoosh/
+    page = request.args.get('page', 1, type=int)
+    posts, total = Post.search(g.search_form.q.data, page,
+                               current_app.config['POSTS_PER_PAGE'])
+    next_url = url_for('main.search', q=g.search_form.q.data, page=page + 1) \
+        if total > page * current_app.config['POSTS_PER_PAGE'] else None
+    prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
+        if page > 1 else None
+    return render_template('search.html', title='Search Results', posts=posts,
+                           next_url=next_url, prev_url=prev_url)
 
-    # page = request.args.get('page', 1, type=int)
-    # posts, total = Post.search(g.search_form.q.data, page,
-    #                            current_app.config['POSTS_PER_PAGE'])
-    # next_url = url_for('main.search', q=g.search_form.q.data, page=page + 1) \
-    #     if total > page * current_app.config['POSTS_PER_PAGE'] else None
-    # prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
-    #     if page > 1 else None
-    # return render_template('search.html', title='Search Results', posts=posts,
-    #                        next_url=next_url, prev_url=prev_url)
-
-# @bp.route('/reindex')
-# @login_required
-# def reindex():
-#     wa.index_all(current_app)
-#     flash('App reindexed')
-#     return redirect(url_for('main.index'))
-
-@bp.route("/translate", methods=['POST'])
+@bp.route('/translate', methods=['POST'])
 @login_required
 def translate_text():
     dest = request.form['dest_language']
-    if dest == "zh": dest = "zh-tw"
+    if dest == 'zh': dest = 'zh-tw'
     # from googletrans import LANGUAGES # all language codes
     return jsonify({'text': Translator().translate(
         text=request.form['text'],src=request.form['source_language'],dest=dest).text})

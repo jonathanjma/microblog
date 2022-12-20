@@ -1,11 +1,8 @@
 .idea
 __pycache__
-elasticsearch-7.7.0
 venv
 microblog.log*
 other
-whoosh-index
-act.cmd
 *.iml
 app.db
 .env

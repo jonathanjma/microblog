@@ -3,7 +3,7 @@
 {% block app_content %}
 <h1>Messages</h1>
 
-{% if messages.__len__() > 0 %}
+{% if messages|length > 0 %}
     {% for message in messages %}
         {% include 'comp/_message.html' %}
     {% endfor %}
