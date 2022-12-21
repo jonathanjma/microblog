@@ -30,7 +30,7 @@ def index():
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
     posts = current_user.followed_posts().paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('main.index', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('main.index', page=posts.prev_num) \
@@ -43,7 +43,7 @@ def index():
 def explore():
     page = request.args.get('page', 1, type=int)
     posts = Post.query.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('main.explore', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('main.explore', page=posts.prev_num) \
@@ -61,60 +61,49 @@ def user(username):
     if show is not None and current_user.username != username:
         return redirect(url_for('main.user', username=user.username))
 
-    if show in [None, 'following', 'followers', 'likes', 'comments']:
+    if show in [None, 'following', 'followers', 'likes', 'comments', 'mentions']:
         if show is None:
             items = user.get_posts().order_by(Post.timestamp.desc()).paginate(
-                page, current_app.config['POSTS_PER_PAGE'], False)
+                page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
             if current_user.username != username:
                 title = user.username + "'s Profile"
             else :
                 title = 'Your Posts'
-            list_type = 'post'
             pag_text = ('Older posts', 'Newer posts')
             id = 1
         elif show == 'following':
             items = user.followed.order_by(User.username.asc()).paginate(
-                page, current_app.config['POSTS_PER_PAGE'], False)
+                page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
             title = 'Who You Follow'
-            list_type = 'user'
             pag_text = ('Previous Page', 'Next Page')
             id = 2
         elif show == 'followers':
             items = user.followers.order_by(User.username.asc()).paginate(
-                page, current_app.config['POSTS_PER_PAGE'], False)
+                page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
             title = 'Who Follows You'
-            list_type = 'user'
             pag_text = ('Previous Page', 'Next Page')
             id = 3
         elif show == 'likes':
             items = user.liked_posts.order_by(Post.timestamp.desc()).paginate(
-                page, current_app.config['POSTS_PER_PAGE'], False)
+                page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
             title = 'Posts You Like'
-            list_type = 'post'
             pag_text = ('Older posts', 'Newer posts')
             id = 4
         else:
             items = user.get_comments().order_by(Post.timestamp.desc()).paginate(
-                page, current_app.config['POSTS_PER_PAGE'], False)
+                page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
             title = 'Your Comments'
-            list_type = 'post'
             pag_text = ('Older comments', 'Newer comments')
             id = 5
 
-        if show is None:
-            next_url = url_for('main.user', username=user.username, page=items.next_num) \
-                if items.has_next else None
-            prev_url = url_for('main.user', username=user.username, page=items.prev_num) \
-                if items.has_prev else None
-        else:
-            next_url = url_for('main.user', username=user.username, show=show, page=items.next_num) \
-                if items.has_next else None
-            prev_url = url_for('main.user', username=user.username, show=show, page=items.prev_num) \
-                if items.has_prev else None
+        next_url = url_for('main.user', username=user.username, show=show, page=items.next_num) \
+            if items.has_next else None
+        prev_url = url_for('main.user', username=user.username, show=show, page=items.prev_num) \
+            if items.has_prev else None
 
         form = EmptyForm()
         return render_template('user.html', title=title, user=user,
-                               items=items.items, item_type=list_type, pag_text=pag_text, id=id,
+                               items=items.items, pag_text=pag_text, id=id,
                                next_url=next_url, prev_url=prev_url, form=form)
     else:
         return redirect(url_for('main.user', username=user.username))
@@ -196,7 +185,7 @@ def post_info(post_id):
         return redirect(url_for('main.post_info', post_id=post_id))
 
     comments = post.comments.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('main.post_info', post_id=post_id, page=comments.next_num) \
         if comments.has_next else None
     prev_url = url_for('main.post_info', post_id=post_id, page=comments.prev_num) \
@@ -263,7 +252,7 @@ def messages():
     page = request.args.get('page', 1, type=int)
     messages = current_user.messages_received.order_by(
         Message.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('main.messages', page=messages.next_num) \
         if messages.has_next else None
     prev_url = url_for('main.messages', page=messages.prev_num) \
@@ -295,7 +284,7 @@ def search():
         if total > page * current_app.config['POSTS_PER_PAGE'] else None
     prev_url = url_for('main.search', q=g.search_form.q.data, page=page - 1) \
         if page > 1 else None
-    return render_template('search.html', title='Search Results', posts=posts,
+    return render_template('search.html', title='Search Results', posts=posts.all(),
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/translate', methods=['POST'])

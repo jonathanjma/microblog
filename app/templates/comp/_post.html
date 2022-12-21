@@ -7,9 +7,7 @@
         </td>
         <td>
             <span class="has_popup user_popup">
-                <a href="{{ url_for('main.user', username=post.author.username) }}">
-                    {{ post.author.username }}
-                </a>
+                <a href="{{ url_for('main.user', username=post.author.username) }}">{{ post.author.username }}</a>
             </span>
 
             {% if not post.is_comment() %}
@@ -28,8 +26,8 @@
                 {%- else -%}
                     <p>
                     {%- for segment in post_data[0] -%}
-                        {%- if segment[0] == '@' and post_data[1].get(segment) != None -%}
-                            <a href="{{ url_for('main.user', username=post_data[1].get(segment)) }}">{{ segment }}</a>
+                        {%- if segment[0] == '@' and segment[1:] in post_data[1] -%}
+                            <span class="has_popup user_popup"><a href="{{ url_for('main.user', username=segment[1:]) }}">{{ segment }}</a></span>
                         {%- else -%}
                             {{ segment }}
                         {%- endif -%}

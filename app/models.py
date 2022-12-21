@@ -114,15 +114,13 @@ class User(UserMixin, db.Model):
         return n
 
     def get_reset_password_token(self, expires_in=600):
-        return jwt.encode(
-            {'reset_password': self.id, 'exp': time() + expires_in},
-            current_app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+        return jwt.encode({'reset_password': self.id, 'exp': time() + expires_in},
+            current_app.config['SECRET_KEY'], algorithm='HS256')
 
     @staticmethod
     def verify_reset_password_token(token):
         try:
-            id = jwt.decode(token, current_app.config['SECRET_KEY'],
-                            algorithms=['HS256'])['reset_password']
+            id = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])['reset_password']
         except:
             return
         return User.query.get(id)
@@ -148,8 +146,7 @@ class SearchableMixin(object):
         when = []
         for i in range(len(ids)):
             when.append((ids[i], i))
-        return cls.query.filter(cls.id.in_(ids)).order_by(
-            db.case(when, value=cls.id)), total
+        return cls.query.filter(cls.id.in_(ids)).order_by(db.case(when, value=cls.id)), total
 
     @classmethod
     def before_commit(cls, session):
@@ -208,73 +205,15 @@ class Post(SearchableMixin, db.Model):
 
     def display_body_data(self):
         if self.body.count('@') >= 1:
-            post_data = self.parse_mentions()
-            parsed_post, users = post_data
-            post = ''
-            for segment in parsed_post:
-                post += segment
-            print(post)
-            if post != self.body:
-                raise RuntimeError('Mention parse error: post disagreement' \
-                                   '\nExpected: ' + self.body + '\nActual: ' + post)
-            print(users)
+            # filter out mentions of invalid users
+            users = list(filter(lambda x: mention_user_filter(x), re.findall(r'\B@(\w+)', self.body)))
+            # split post body so mentions are seperated elements (allows them to be linked)
+            # filter removes empty strings at beginning + end of list
+            mention_split = list(filter(None, re.split(r'(\B@\w+)', self.body)))
+            post_data = (mention_split, users)
         else:
             post_data = self.body
-        print(post_data)
         return post_data
-
-    def parse_mentions(self):
-        print()
-        regex_pattern = re.compile(r"\w+(?:'\w+)*|[^\w]")
-        matches = regex_pattern.findall(self.body)
-
-        processed = 0
-        post_segments = []
-        users_dict = {}
-        word_after = 0
-
-        print(matches)
-        print()
-
-        for i in range(1, len(matches)):
-
-            if matches[i-1] == '@':
-                user_query = mention_user_filter(matches[i])
-
-                if user_query is not None:
-                    print('user= ' + user_query.username)
-                    users_dict['@'+matches[i]] = user_query.username
-
-                    if processed == 0:
-                        split_indexes = [i-1,i+1]
-                        split_list = [matches[i : j]
-                                      for i, j in zip([0] + split_indexes, split_indexes + [None])]
-                        print(split_list)
-
-                        for segment in split_list:
-                            post_segments.append("".join(segment))
-                    else:
-                        split_indexes = [word_after,i-1,i+1]
-                        split_list = [matches[i : j]
-                                      for i, j in zip([0] + split_indexes, split_indexes + [None])]
-                        print(split_list)
-
-                        post_segments.pop()
-                        for j in range(1, len(split_list)):
-                            post_segments.append("".join(split_list[j]))
-
-                    processed += 1
-                    word_after = i + 1
-
-                    print(post_segments)
-                    print()
-
-                else:
-                    print('User does not exist')
-
-        if len(post_segments) == 0:
-            post_segments = self.body
-        return post_segments, users_dict
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)

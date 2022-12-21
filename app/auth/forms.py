@@ -1,10 +1,11 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Regexp
 from app.models import User
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('Username',
+        validators=[DataRequired(), Regexp(r'^[\w]+$', message='Username can only contain alphanumeric characters and underscores.')])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])

@@ -96,28 +96,30 @@
             }).done(function(response) {
                 $(destElem).text(response['text'])
             }).fail(function() {
-                $(destElem).text("Unable to translate");
+                $(destElem).text('Unable to translate');
             });
         }
 
         // popups
         $(function() {
-            var timer = null;
+            let timer = null;
             $('.has_popup').hover(
                 function(event) {
                     // mouse in event handler
-                    var elem = $(event.currentTarget);
+                    let elem = $(event.currentTarget);
                     timer = setTimeout(function() {
                         timer = null;
 
                         if (elem.hasClass('user_popup')) {
-                            var link = '/user/' + elem.first().text().trim() + '/popup';
+                            let user_str = elem.first().text().trim()
+                            if (user_str[0] === '@') user_str = user_str.substring(1)
+                            var link = '/user/' + user_str + '/popup';
                         } else if (elem.hasClass('likes_popup')) {
                             var link = '/post/' + elem.first().attr('id') + '/likes_popup';
                         }
 
                         xhr = $.ajax(link).done(
-                            function(data) {
+                            function (data) {
                                 xhr = null
                                 elem.popover({
                                     trigger: 'manual',
@@ -132,7 +134,7 @@
                     }, 1000);
                 },
                 function(event) {
-                    var elem = $(event.currentTarget);
+                    let elem = $(event.currentTarget);
                     if (timer) {
                         clearTimeout(timer);
                         timer = null;
@@ -157,11 +159,11 @@
         // new notification checker
         {% if current_user.is_authenticated %}
             $(function() {
-                var since = 0;
+                let since = 0;
                 setInterval(function() {
                     $.ajax('{{ url_for('main.notifications') }}?since=' + since).done(
                         function(notifications) {
-                            for (var i = 0; i < notifications.length; i++) {
+                            for (let i = 0; i < notifications.length; i++) {
                                 switch (notifications[i].name) {
                                     case 'unread_message_count':
                                         set_message_count(notifications[i].data);
@@ -175,8 +177,8 @@
             });
         {% endif %}
 
-        // allow table rows with "data-href" to be clickable
-        $('tr[data-href]').on("click", function() {
+        // allow table rows with 'data-href' to be clickable
+        $('tr[data-href]').on('click', function() {
             document.location = $(this).data('href');
         });
     </script>

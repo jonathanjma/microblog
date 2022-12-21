@@ -66,12 +66,12 @@
 <p></p>
 {% endif %}
 
-{% if items.__len__() > 0 %}
-    {% if item_type == 'post' %}
+{% if items|length > 0 %}
+    {% if items[0].__type__ == 'Post' %}
         {% for post in items %}
             {% include 'comp/_post.html' %}
         {% endfor %}
-    {% elif item_type == 'user' %}
+    {% elif items[0].__type__ == 'User' %}
         {% for user in items %}
             {% include 'comp/_user.html' %}
         {% endfor %}
