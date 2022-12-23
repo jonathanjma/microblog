@@ -48,12 +48,6 @@ class User(UserMixin, db.Model):
 
     __type__ = 'User'
 
-    def get_mention_name(self):
-        if len(self.username.split()) > 1:
-            return self.username.replace(' ', '')
-        else:
-            return self.username
-
     def get_posts(self):
         return self.posts.filter_by(parent_id=None)
 
@@ -130,7 +124,7 @@ class User(UserMixin, db.Model):
 
 def mention_user_filter(match):
     for user in User.query.all():
-        if user.get_mention_name() == match:
+        if user.username == match:
             return user
 
 @login.user_loader
